@@ -37,9 +37,9 @@ async function updateLivePanel(guild, cfg) {
         if (!msg) return;
 
         const verifyEmbed = new EmbedBuilder()
-            .setTitle('Server Verification')
+            .setTitle('**__Verify__**')
             .setDescription(cfg.message || botConfig.verification.defaultMessage)
-            .setColor(getColor('success'));
+            .setColor(getColor('primary'));
 
         const verifyButton = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
