@@ -81,9 +81,9 @@ async function persistPanelMessageId(client, guildId, guildConfig, messageId) {
 
 function buildPanelEmbed(config) {
     return new EmbedBuilder()
-        .setTitle('Support Tickets')
+        .setTitle('2:1 Studios | Support')
         .setDescription(config.ticketPanelMessage || 'Click the button below to create a support ticket.')
-        .setColor(getColor('info'));
+        .setColor(getColor('primary'));
 }
 
 function buildPanelButtonRow(config) {
