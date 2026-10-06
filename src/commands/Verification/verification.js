@@ -191,7 +191,7 @@ async function handleSetup(interaction, guild, client) {
         new ButtonBuilder()
             .setCustomId("verify_user")
             .setLabel(buttonText)
-            .setStyle(ButtonStyle.Success)
+            .setStyle(ButtonStyle.Secondary)
             .setEmoji("✅")
     );
 
