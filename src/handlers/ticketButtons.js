@@ -149,7 +149,6 @@ const createTicketHandler = {
     }
   }
 };
-
 const createTicketModalHandler = {
   name: 'create_ticket_modal',
   async execute(interaction, client, args) {
