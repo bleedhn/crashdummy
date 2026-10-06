@@ -104,7 +104,7 @@ async function ensureTicketPermission(interaction, client, actionLabel, options 
 
 const createTicketHandler = {
   name: 'create_ticket',
-  async execute(interaction, client) {
+  async execute(interaction, client, args) {
     try {
       if (!(await ensureGuildContext(interaction))) return;
 
