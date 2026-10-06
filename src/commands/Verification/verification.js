@@ -184,7 +184,7 @@ async function handleSetup(interaction, guild, client) {
     const verifyEmbed = createEmbed({
         title: "**__Verify__**",
         description: message,
-        color: getColor('success')
+        color: getColor('primary')
     });
 
     const verifyButton = new ActionRowBuilder().addComponents(
