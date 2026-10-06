@@ -349,7 +349,7 @@ function normalizeWelcomeConfig(raw = {}) {
     const welcomeEmbed = base.welcomeEmbed ?? {
         title: "**Welcome to 2:1 Studios!**",
         description: "Welcome {user} to {server}!",
-        color: getColor("primary"),
+        color: getColor("Primary"),
         thumbnail: true,
         footer: "Welcome to {server}!"
     };
