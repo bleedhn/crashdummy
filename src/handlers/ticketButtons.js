@@ -182,39 +182,7 @@ const createTicketModalHandler = {
     }
   }
 };
-  name: 'create_ticket_modal',
-  async execute(interaction, client, args) {
-    try {
-      if (!(await ensureGuildContext(interaction))) return;
 
-      const deferSuccess = await InteractionHelper.safeDefer(interaction, { flags: MessageFlags.Ephemeral });
-      if (!deferSuccess) return;
-      
-      const typeLabel = args?.[0] === 'discord' ? '[Discord Support] ' : '[Game Support] ';
-      const reason = typeLabel + interaction.fields.getTextInputValue('reason');
-      const reason = typeLabel + interaction.fields.getTextInputValue('reason');
-      const config = await getGuildConfig(client, interaction.guildId);
-      const categoryId = config.ticketCategoryId || null;
-      
-      const { channel } = await createTicket(
-        interaction.guild,
-        interaction.member,
-        categoryId,
-        reason,
-         'none',
-        typeEmoji
-      );
-      await interaction.editReply({
-        embeds: [successEmbed(
-          'Ticket Created',
-          `Your ticket has been created in ${channel}!`
-        )]
-      });
-    } catch (error) {
-      await handleInteractionError(interaction, error, { type: 'button', handler: 'ticket', customId: interaction.customId });
-    }
-  }
-};
 const closeTicketHandler = {
   name: 'ticket_close',
   async execute(interaction, client) {
