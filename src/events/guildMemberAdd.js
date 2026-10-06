@@ -38,7 +38,7 @@ export default {
                 const messageContent = welcomeConfig.welcomePing ? user.toString() : null;
 
                 const embedTitle = formatWelcomeMessage(
-                    welcomeConfig.welcomeEmbed?.title || '🎉 Welcome!',
+                    welcomeConfig.welcomeEmbed?.title || '**Welcome to 2:1 Studios!**',
                     formatData
                 );
                 const embedFooter = welcomeConfig.welcomeEmbed?.footer
@@ -53,14 +53,10 @@ export default {
                     });
                 } else {
                     const embed = new EmbedBuilder()
-                        .setColor(welcomeConfig.welcomeEmbed?.color || getColor('success'))
+                        .setColor(welcomeConfig.welcomeEmbed?.color || getColor('primary'))
                         .setTitle(embedTitle)
                         .setDescription(welcomeMessage)
                         .setThumbnail(user.displayAvatarURL())
-                        .addFields(
-                            { name: 'User', value: `${user.tag} (${user.id})`, inline: true },
-                            { name: 'Member Count', value: guild.memberCount.toString(), inline: true }
-                        )
                         .setTimestamp()
                         .setFooter({ text: embedFooter });
                     
