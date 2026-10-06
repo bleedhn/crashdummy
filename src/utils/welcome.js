@@ -50,9 +50,9 @@ export function formatWelcomeMessage(message, data) {
         '{server.name}': guild?.name || 'Server',
         '{guild.name}': guild?.name || 'Server',
         '{guild.id}': guild?.id || 'unknown',
-        '{guild.memberCount}': guild?.memberCount?.toString?.() || '0',
-        '{memberCount}': guild?.memberCount?.toString?.() || '0',
-        '{membercount}': guild?.memberCount?.toString?.() || '0'
+        '{guild.memberCount}': guild?.memberCount?.toLocaleString?.('en-US') || '0',
+        '{memberCount}': guild?.memberCount?.toLocaleString?.('en-US') || '0',
+        '{membercount}': guild?.memberCount?.toLocaleString?.('en-US') || '0'
     };
 
     let result = message;
