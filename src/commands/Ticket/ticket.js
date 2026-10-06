@@ -139,7 +139,7 @@ const dmOnClose = interaction.options.getBoolean("dm_on_close") !== false;
             const setupEmbed = createEmbed({ 
                 title: "**2:1 Studios | Support**", 
 description: panelMessage,
-                color: getColor('Primary')
+                color: getColor('primary')
             });
 
             const ticketButton = new ActionRowBuilder().addComponents(
