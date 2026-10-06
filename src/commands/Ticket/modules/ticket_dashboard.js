@@ -91,8 +91,8 @@ function buildPanelButtonRow(config) {
         new ButtonBuilder()
             .setCustomId('create_ticket')
             .setLabel(config.ticketButtonLabel || 'Create Ticket')
-            .setStyle(ButtonStyle.Primary)
-            .setEmoji('📩'),
+            .setStyle(ButtonStyle.secondary)
+            .setEmoji(''),
     );
 }
 
