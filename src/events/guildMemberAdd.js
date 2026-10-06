@@ -38,9 +38,8 @@ export default {
                 const messageContent = welcomeConfig.welcomePing ? user.toString() : null;
 
                 const embedTitle = formatWelcomeMessage(
-                   const embedTitle = formatWelcomeMessage(
-                       welcomeConfig.welcomeEmbed?.title || '🎉 Welcome!',
-                       formatData
+                    welcomeConfig.welcomeEmbed?.title || '🎉 Welcome!',
+                    formatData
                 );
                 const embedFooter = welcomeConfig.welcomeEmbed?.footer
                     ? formatWelcomeMessage(welcomeConfig.welcomeEmbed.footer, formatData)
@@ -54,10 +53,14 @@ export default {
                     });
                 } else {
                     const embed = new EmbedBuilder()
-                        .setColor(welcomeConfig.welcomeEmbed?.color || getColor('primary'))
+                        .setColor(welcomeConfig.welcomeEmbed?.color || getColor('success'))
                         .setTitle(embedTitle)
                         .setDescription(welcomeMessage)
                         .setThumbnail(user.displayAvatarURL())
+                        .addFields(
+                            { name: 'User', value: `${user.tag} (${user.id})`, inline: true },
+                            { name: 'Member Count', value: guild.memberCount.toString(), inline: true }
+                        )
                         .setTimestamp()
                         .setFooter({ text: embedFooter });
                     
