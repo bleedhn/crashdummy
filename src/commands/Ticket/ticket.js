@@ -137,7 +137,7 @@ const panelMessage = interaction.options.getString("panel_message") || "Click th
 const dmOnClose = interaction.options.getBoolean("dm_on_close") !== false;
 
             const setupEmbed = createEmbed({ 
-                title: "Support Tickets", 
+                title: "**2:1 Studios | Support**", 
 description: panelMessage,
                 color: getColor('info')
             });
@@ -146,8 +146,8 @@ description: panelMessage,
                 new ButtonBuilder()
                     .setCustomId("create_ticket")
 .setLabel(buttonLabel)
-                    .setStyle(ButtonStyle.Primary)
-                    .setEmoji("📩"),
+                    .setStyle(ButtonStyle.secondary)
+                    .setEmoji(""),
             );
 
             try {
