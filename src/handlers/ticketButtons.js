@@ -190,7 +190,8 @@ const createTicketModalHandler = {
       const deferSuccess = await InteractionHelper.safeDefer(interaction, { flags: MessageFlags.Ephemeral });
       if (!deferSuccess) return;
       
-      const reason = interaction.fields.getTextInputValue('reason');
+      const typeLabel = args?.[0] === 'discord' ? '[Discord Support] ' : '[Game Support] ';
+      const reason = typeLabel + interaction.fields.getTextInputValue('reason');
       const reason = typeLabel + interaction.fields.getTextInputValue('reason');
       const config = await getGuildConfig(client, interaction.guildId);
       const categoryId = config.ticketCategoryId || null;
