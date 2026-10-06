@@ -23,7 +23,7 @@ export const botConfig = {
     // 5 = Competing
     activities: [
       {
-        name: "Streaming **Discord.gg/2:1Studios**", // required by Discord API, not shown in the client
+        name: "Streaming 𝗗𝗶𝘀𝗰𝗼𝗿𝗱.𝗴𝗴/𝟮:𝟭𝗦𝘁𝘂𝗱𝗶𝗼𝘀", // required by Discord API, not shown in the client
         type: 1,     // this is what people actually see
         url: "https://www.twitch.tv/.gg/2:1Studios",               // Custom
       },
