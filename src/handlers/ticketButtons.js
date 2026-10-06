@@ -214,7 +214,6 @@ const createTicketModalHandler = {
     }
   }
 };
-
 const closeTicketHandler = {
   name: 'ticket_close',
   async execute(interaction, client) {
