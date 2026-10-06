@@ -90,9 +90,14 @@ function buildPanelButtonRow(config) {
     return new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId('create_ticket')
-            .setLabel(config.ticketButtonLabel || 'Create Ticket')
-            .setStyle(ButtonStyle.secondary)
+            .setLabel('Game Support')
+            .setStyle(ButtonStyle.Secondary)
             .setEmoji('🎮'),
+        new ButtonBuilder()
+            .setCustomId('create_ticket:discord')
+            .setLabel('Discord Support')
+            .setStyle(ButtonStyle.Secondary)
+            .setEmoji('👾'),
     );
 }
 
