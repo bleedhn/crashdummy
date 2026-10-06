@@ -25,7 +25,7 @@ export const botConfig = {
       {
         name: "Custom Status", // required by Discord API, not shown in the client
         state: "please don't hit me",     // this is what people actually see
-        type: 4,               // Custom
+        type: 1,               // Custom
       },
     ],
   },
