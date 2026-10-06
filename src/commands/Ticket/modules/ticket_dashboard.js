@@ -92,7 +92,7 @@ function buildPanelButtonRow(config) {
             .setCustomId('create_ticket')
             .setLabel(config.ticketButtonLabel || 'Create Ticket')
             .setStyle(ButtonStyle.secondary)
-            .setEmoji(''),
+            .setEmoji('🎮'),
     );
 }
 
