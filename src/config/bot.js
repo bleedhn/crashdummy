@@ -11,7 +11,7 @@ export const botConfig = {
   // - "invisible" = appears offline
   presence: {
     // Current online state shown on Discord.
-    status: "idle",
+    status: "online",
 
     // Activity lines shown under the bot name.
     // `type` number mapping from Discord:
@@ -23,9 +23,9 @@ export const botConfig = {
     // 5 = Competing
     activities: [
       {
-        name: "Streaming .gg/2:1", // required by Discord API, not shown in the client
-        state: "please don't hit me",     // this is what people actually see
-        type: 1,               // Custom
+        name: "I buckle up for every ticket", // required by Discord API, not shown in the client
+        type: 1,     // this is what people actually see
+        url: "https://www.twitch.tv/.gg/2:1Studios",               // Custom
       },
     ],
   },
