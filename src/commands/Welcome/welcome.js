@@ -22,7 +22,7 @@ export default {
                         .setRequired(true))
                 .addStringOption(option =>
                     option.setName('message')
-                        .setDescription('Welcome message. Variables: {user}, {username}, {server}, {memberCount}')
+                        .setDescription('Welcome message. Variables:')
                         .setRequired(true))
                 .addStringOption(option =>
                     option.setName('image')
