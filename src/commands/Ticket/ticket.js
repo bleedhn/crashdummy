@@ -146,7 +146,7 @@ description: panelMessage,
                 new ButtonBuilder()
                     .setCustomId("create_ticket")
 .setLabel(buttonLabel)
-                    .setStyle(ButtonStyle.secondary)
+                    .setStyle(ButtonStyle.Secondary)
                     .setEmoji("🎮"),
             );
 
