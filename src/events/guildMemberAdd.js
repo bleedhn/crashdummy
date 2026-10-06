@@ -41,7 +41,7 @@ export default {
                    const embedTitle = formatWelcomeMessage(
                        welcomeConfig.welcomeEmbed?.title || '🎉 Welcome!',
                        formatData
-                   );
+                );
                 );
                 const embedFooter = welcomeConfig.welcomeEmbed?.footer
                     ? formatWelcomeMessage(welcomeConfig.welcomeEmbed.footer, formatData)
