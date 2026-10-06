@@ -126,7 +126,7 @@ const createTicketHandler = {
       }
       
       const modal = new ModalBuilder()
-        .setCustomId('create_ticket_modal')
+        .setCustomId(args?.[0] ? `create_ticket_modal:${args[0]}` : 'create_ticket_modal')
         .setTitle('Create a Ticket');
 
       const reasonInput = new TextInputBuilder()
