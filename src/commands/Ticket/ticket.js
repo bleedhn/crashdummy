@@ -137,9 +137,9 @@ const panelMessage = interaction.options.getString("panel_message") || "Click th
 const dmOnClose = interaction.options.getBoolean("dm_on_close") !== false;
 
             const setupEmbed = createEmbed({ 
-                title: "Support TIckets", 
+                title: "**2:1 Studios | Support**", 
 description: panelMessage,
-                color: getColor('info')
+                color: getColor('Primary')
             });
 
             const ticketButton = new ActionRowBuilder().addComponents(
