@@ -147,7 +147,7 @@ description: panelMessage,
                     .setCustomId("create_ticket")
 .setLabel(buttonLabel)
                     .setStyle(ButtonStyle.secondary)
-                    .setEmoji(""),
+                    .setEmoji("🎮"),
             );
 
             try {
