@@ -100,7 +100,7 @@ export default {
                 });
 
                 const embed = new EmbedBuilder()
-                    .setColor(getColor('success'))
+                    .setColor(getColor('primary'))
                     .setTitle('Welcome System Configured')
                     .setDescription(`Welcome messages will now be sent to ${channel}`)
                     .addFields(
