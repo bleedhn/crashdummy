@@ -38,7 +38,7 @@ export default {
                 const messageContent = welcomeConfig.welcomePing ? user.toString() : null;
 
                 const embedTitle = formatWelcomeMessage(
-                    welcomeConfig.welcomeEmbed?.title || '🎉 Welcome!',
+                    welcomeConfig.welcomeEmbed?.title || 'Welcome to 2:1 Studios!',
                     formatData
                 );
                 const embedFooter = welcomeConfig.welcomeEmbed?.footer
