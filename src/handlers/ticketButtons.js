@@ -160,6 +160,7 @@ const createTicketModalHandler = {
       if (!deferSuccess) return;
       
       const typeLabel = args?.[0] === 'discord' ? '[Discord Support] ' : '[Game Support] ';
+      const typeEmoji = args?.[0] === 'discord' ? '👾' : '🎮';
       const reason = typeLabel + interaction.fields.getTextInputValue('reason');
       const config = await getGuildConfig(client, interaction.guildId);
       const categoryId = config.ticketCategoryId || null;
@@ -168,7 +169,9 @@ const createTicketModalHandler = {
         interaction.guild,
         interaction.member,
         categoryId,
-        reason
+        reason,
+         'none',
+        typeEmoji
       );
       await interaction.editReply({
         embeds: [successEmbed(
