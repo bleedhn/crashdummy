@@ -93,7 +93,33 @@ class TitanBot extends Client {
       startupLog('Registering slash commands globally...');
       await this.registerCommands();
       startupLog('Slash commands registration complete');
-      
+
+      // Register massunban directly to each server
+      try {
+          const massUnban = this.commands.get('massunban');
+
+          if (!massUnban) {
+              logger.error(
+                  'massunban was not loaded. Check the command file.'
+              );
+          } else {
+              for (const guild of this.guilds.cache.values()) {
+                  await guild.commands.create(
+                      massUnban.data.toJSON()
+                  );
+
+                  logger.info(
+                      `Registered /massunban in ${guild.name}`
+                  );
+              }
+          }
+      } catch (error) {
+          logger.error(
+              'Failed to register /massunban:',
+              error
+          );
+      }
+
       const databaseMode = dbStatus.isDegraded
         ? 'Optional in-memory mode (data resets after restart)'
         : 'Connected (persistent data enabled)';
