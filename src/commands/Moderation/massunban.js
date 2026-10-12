@@ -1,34 +1,38 @@
-const {
+
+import {
     SlashCommandBuilder,
     EmbedBuilder,
-    PermissionFlagsBits
-} = require('discord.js');
+    PermissionFlagsBits,
+    MessageFlags
+} from 'discord.js';
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
         .setName('massunban')
         .setDescription('Unban everyone from this server')
         .addBooleanOption(option =>
             option
                 .setName('confirm')
-                .setDescription('Set to true to confirm unbanning everyone')
+                .setDescription('Confirm that you want to unban EVERYONE')
                 .setRequired(true)
         ),
 
-    async execute(interaction) {
-        const { guild, user } = interaction;
+    category: 'moderation',
+
+    async execute(interaction, config, client) {
+        const guild = interaction.guild;
 
         if (!guild) {
             return interaction.reply({
-                content: 'This command only works in a server.',
-                ephemeral: true
+                content: '❌ This command only works in a server.',
+                flags: MessageFlags.Ephemeral
             });
         }
 
-        if (user.id !== guild.ownerId) {
+        if (interaction.user.id !== guild.ownerId) {
             return interaction.reply({
                 content: '❌ Only the server owner can use this command.',
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
@@ -36,8 +40,8 @@ module.exports = {
 
         if (!confirmed) {
             return interaction.reply({
-                content: 'Mass unban cancelled. Set confirm to true to continue.',
-                ephemeral: true
+                content: '❌ Mass unban cancelled.',
+                flags: MessageFlags.Ephemeral
             });
         }
 
@@ -46,7 +50,7 @@ module.exports = {
         if (!botMember.permissions.has(PermissionFlagsBits.BanMembers)) {
             return interaction.reply({
                 content: '❌ I need the Ban Members permission.',
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
@@ -57,7 +61,7 @@ module.exports = {
 
             if (bans.size === 0) {
                 return interaction.editReply({
-                    content: 'There are no banned users in this server.'
+                    content: '✅ There are no banned users in this server.'
                 });
             }
 
@@ -66,21 +70,34 @@ module.exports = {
 
             for (const ban of bans.values()) {
                 try {
-                    await guild.members.unban(ban.user.id);
+                    await guild.members.unban(
+                        ban.user.id,
+                        'Mass unban requested by server owner'
+                    );
+
                     successful++;
+
                 } catch (error) {
                     failed++;
-                    console.error(`Failed to unban ${ban.user.id}:`, error);
+                    console.error(
+                        `Failed to unban ${ban.user.id}:`,
+                        error
+                    );
                 }
             }
 
             const embed = new EmbedBuilder()
-                .setColor('Blue')
-                .setTitle('Mass Unban Complete')
+                .setColor(0x3498DB)
+                .setTitle('🔓 Mass Unban Complete')
                 .setDescription(
-                    `✅ Successfully unbanned: **${successful}** users\n` +
-                    `❌ Failed: **${failed}** users`
+                    `**Mass unban results**\n\n` +
+                    `✅ Successfully unbanned: **${successful}**\n` +
+                    `❌ Failed: **${failed}**\n` +
+                    `📋 Total processed: **${bans.size}**`
                 )
+                .setFooter({
+                    text: `Executed by ${interaction.user.username}`
+                })
                 .setTimestamp();
 
             await interaction.editReply({
@@ -91,7 +108,7 @@ module.exports = {
             console.error('Mass unban error:', error);
 
             await interaction.editReply({
-                content: '❌ An error occurred while fetching banned users.'
+                content: '❌ An error occurred while processing the mass unban.'
             });
         }
     }
