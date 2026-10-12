@@ -2,7 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField } = require('disc
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('mass-unban')
+        .setName('massunban')
         .setDescription('Unbans EVERYONE from the server'),
 
     async execute(interaction) {
