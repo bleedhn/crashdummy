@@ -94,6 +94,23 @@ class TitanBot extends Client {
       await this.registerCommands();
       startupLog('Slash commands registration complete');
 
+      
+      for (const guild of this.guilds.cache.values()) {
+          try {
+              const commands = await guild.commands.fetch();
+
+              for (const command of commands.values()) {
+                  if (command.name === 'massunban') {
+                     await command.delete();
+                     logger.info(`Removed duplicate /massunban from ${guild.name}`);
+                  }
+              }
+          } catch (error) {
+              logger.error(`Failed to clean commands in ${guild.name}:`, error);
+          } 
+      }
+
+
       // Register massunban directly to each server
       try {
           const massUnban = this.commands.get('massunban');
