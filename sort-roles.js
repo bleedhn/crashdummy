@@ -1,7 +1,8 @@
 
 import {
     Client,
-    GatewayIntentBits
+    GatewayIntentBits,
+    PermissionFlagsBits
 } from 'discord.js';
 
 const TOKEN = process.env.DISCORD_TOKEN;
@@ -9,114 +10,110 @@ const [SOURCE_ID, DEST_ID] = process.argv.slice(2);
 
 if (!TOKEN || !SOURCE_ID || !DEST_ID) {
     console.error(
-        'Usage: node sort-roles.js SOURCE_SERVER_ID DEST_SERVER_ID'
+        'Usage: node sort-roles.js SOURCE_ID DEST_ID'
     );
     process.exit(1);
-}
-
-if (SOURCE_ID === DEST_ID) {
-    throw new Error('Source and destination must differ.');
 }
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds]
 });
 
-async function sortRoles() {
+async function main() {
     try {
         await client.login(TOKEN);
 
         const source = await client.guilds.fetch(SOURCE_ID);
-        const destination = await client.guilds.fetch(DEST_ID);
+        const dest = await client.guilds.fetch(DEST_ID);
 
         await source.roles.fetch();
-        await destination.roles.fetch();
+        await dest.roles.fetch();
 
-        const botMember = await destination.members.fetchMe();
+        const bot = await dest.members.fetchMe();
 
-        if (!botMember.permissions.has('ManageRoles')) {
+        if (!bot.permissions.has(PermissionFlagsBits.ManageRoles)) {
             throw new Error('Bot needs Manage Roles permission.');
         }
 
-        // Original roles ordered from bottom to top
         const sourceRoles = [...source.roles.cache.values()]
-            .filter(role => !role.managed && role.id !== source.id)
-            .sort((a, b) => a.position - b.position);
+            .filter(r => r.id !== source.id && !r.managed)
+            .sort((a, b) => a.comparePositionTo(b));
 
-        // Destination roles the bot can actually move
-       const botHighest = botMember.roles.highest.position;
+        const destRoles = [...dest.roles.cache.values()]
+            .filter(r => r.id !== dest.id && !r.managed && r.editable);
 
-const destRoles = [...destination.roles.cache.values()]
-    .filter(role =>
-        role.id !== destination.id &&
-        !role.managed &&
-        role.editable &&
-        role.position < botHighest
-    );
-
-        const usedIds = new Set();
-        const matches = [];
+        const used = new Set();
+        const ordered = [];
 
         for (const sourceRole of sourceRoles) {
-            const match = destRoles.find(role =>
-                role.name === sourceRole.name &&
-                !usedIds.has(role.id)
+            const match = destRoles.find(r =>
+                r.name === sourceRole.name &&
+                !used.has(r.id)
             );
 
             if (match) {
-                usedIds.add(match.id);
-                matches.push({
-                    source: sourceRole,
-                    destination: match
-                });
+                used.add(match.id);
+                ordered.push(match);
             } else {
-                console.log(
-                    `Cannot match or move: ${sourceRole.name}`
-                );
+                console.log(`Unmatched: ${sourceRole.name}`);
             }
         }
 
-        if (matches.length === 0) {
-            console.log('No matching movable roles found.');
-            return;
-        }
-
-        // Use the existing movable role positions.
-        // This avoids trying to move roles above the bot.
-        const positions = destRoles
-            .filter(role => usedIds.has(role.id))
-            .map(role => role.position)
+        // Only rearrange positions currently occupied by
+        // matched roles, keeping restricted roles untouched.
+        const slots = ordered
+            .map(r => r.position)
             .sort((a, b) => a - b);
 
-        const updates = matches.map((pair, index) => ({
-            role: pair.destination.id,
-            position: positions[index]
+        const updates = ordered.map((role, i) => ({
+            role: role.id,
+            position: slots[i]
         }));
 
-        console.log(
-            `Reordering ${updates.length} matching roles...`
-        );
+        console.log('Applying role hierarchy...');
 
-        console.log('Bot highest role:', botMember.roles.highest.name);
-console.log('Bot highest position:', botHighest);
-console.log('Roles being reordered:', updates.length);
-console.log('Requested updates:', updates);
+        await dest.roles.setPositions(updates);
 
-        console.log('Role sorting complete!');
+        // Fetch again to verify actual Discord order.
+        await dest.roles.fetch();
 
-        for (const pair of matches) {
-            console.log(`Matched: ${pair.source.name}`);
+        const actual = [...dest.roles.cache.values()]
+            .filter(r => used.has(r.id))
+            .sort((a, b) => a.comparePositionTo(b))
+            .map(r => r.id);
+
+        const expected = ordered.map(r => r.id);
+
+        console.log('\nEXPECTED ORDER (bottom to top):');
+        for (const role of ordered) {
+            console.log(role.name);
         }
 
-        console.log(
-            'Review the destination role hierarchy in Discord.'
-        );
+        console.log('\nACTUAL ORDER (bottom to top):');
+        const actualRoles = [...dest.roles.cache.values()]
+            .filter(r => used.has(r.id))
+            .sort((a, b) => a.comparePositionTo(b));
+
+        for (const role of actualRoles) {
+            console.log(role.name);
+        }
+
+        if (expected.every((id, i) => id === actual[i])) {
+            console.log('\nSUCCESS: Matching roles are correctly ordered!');
+        } else {
+            console.log(
+                '\nWARNING: Discord returned a different order.'
+            );
+            console.log(
+                'Check role hierarchy and managed roles.'
+            );
+        }
 
     } catch (error) {
-        console.error('Role sorting failed:', error);
+        console.error('Sorting failed:', error);
     } finally {
         client.destroy();
     }
 }
 
-sortRoles();
+main();
