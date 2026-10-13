@@ -97,7 +97,10 @@ const destRoles = [...destination.roles.cache.values()]
             `Reordering ${updates.length} matching roles...`
         );
 
-        await destination.roles.setPositions(updates);
+        console.log('Bot highest role:', botMember.roles.highest.name);
+console.log('Bot highest position:', botHighest);
+console.log('Roles being reordered:', updates.length);
+console.log('Requested updates:', updates);
 
         console.log('Role sorting complete!');
 
