@@ -1,33 +1,31 @@
-
 import { REST, Routes } from 'discord.js';
-import 'dotenv/config';
 
 const TOKEN = process.env.DISCORD_TOKEN;
 
+const [SERVER_ID, USER_ID, ROLE_ID] = process.argv.slice(2);
+
+console.log('Discord token available:', Boolean(TOKEN));
+
 if (!TOKEN) {
-    console.error('ERROR: Discord bot token is missing!');
-    console.error('Check your Railway service variables.');
+    console.error('ERROR: DISCORD_TOKEN is missing!');
     process.exit(1);
 }
 
-const SERVER_ID = '1071823690611834900';
-const USER_ID = '1559435216039313421';
-const ROLE_ID = '1556785571639070771';
+if (!SERVER_ID || !USER_ID || !ROLE_ID) {
+    console.error('Usage: node give-role.js SERVER_ID USER_ID ROLE_ID');
+    process.exit(1);
+}
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
 
 async function giveRole() {
     try {
         await rest.put(
-            Routes.guildMemberRole(
-                SERVER_ID,
-                USER_ID,
-                ROLE_ID
-            ),
+            Routes.guildMemberRole(SERVER_ID, USER_ID, ROLE_ID),
             { body: {} }
         );
 
-        console.log('Successfully gave the user the role!');
+        console.log('SUCCESS: Role assigned!');
     } catch (error) {
         console.error('Failed to give role:', error);
     }
