@@ -2,11 +2,7 @@
 import { REST, Routes } from 'discord.js';
 import 'dotenv/config';
 
-const TOKEN =
-    process.env.TOKEN ||
-    process.env.DISCORD_TOKEN ||
-    process.env.BOT_TOKEN ||
-    process.env.DISCORD_BOT_TOKEN;
+const TOKEN = process.env.DISCORD_TOKEN;
 
 if (!TOKEN) {
     console.error('ERROR: Discord bot token is missing!');
