@@ -2,24 +2,23 @@
 import {
     Client,
     GatewayIntentBits,
-    ChannelType,
     PermissionFlagsBits,
+    ChannelType,
     OverwriteType
 } from 'discord.js';
 
 const TOKEN = process.env.DISCORD_TOKEN;
-const [SOURCE_ID, DEST_ID, MODE = 'preview'] =
-    process.argv.slice(2);
+const [SOURCE_ID, DEST_ID, MODE = 'preview'] = process.argv.slice(2);
 
 if (!TOKEN || !SOURCE_ID || !DEST_ID) {
     console.error(
-        'Usage: node copy-permissions.js SOURCE_ID DEST_ID [preview|apply]'
+        'Usage: node copy-permissions.js SOURCE_ID DEST_ID preview|apply'
     );
     process.exit(1);
 }
 
 if (SOURCE_ID === DEST_ID) {
-    throw new Error('Source and destination must differ.');
+    throw new Error('Source and destination must be different.');
 }
 
 if (!['preview', 'apply'].includes(MODE)) {
@@ -30,12 +29,10 @@ const client = new Client({
     intents: [GatewayIntentBits.Guilds]
 });
 
-function channelKey(channel) {
-    const parentName = channel.parent?.name ?? 'ROOT';
-
+function key(channel) {
     return JSON.stringify([
         channel.type,
-        parentName,
+        channel.parent?.name ?? 'ROOT',
         channel.name
     ]);
 }
@@ -47,12 +44,10 @@ async function main() {
         const source = await client.guilds.fetch(SOURCE_ID);
         const dest = await client.guilds.fetch(DEST_ID);
 
-        await Promise.all([
-            source.roles.fetch(),
-            dest.roles.fetch(),
-            source.channels.fetch(),
-            dest.channels.fetch()
-        ]);
+        await source.roles.fetch();
+        await dest.roles.fetch();
+        await source.channels.fetch();
+        await dest.channels.fetch();
 
         const bot = await dest.members.fetchMe();
 
@@ -60,149 +55,199 @@ async function main() {
             throw new Error('Bot needs Manage Roles permission.');
         }
 
-        const roleMap = new Map([
-            [source.id, dest.id]
-        ]);
+        const roleMap = new Map([[source.id, dest.id]]);
+        const used = new Set();
+
+        let rolesUpdated = 0;
+        let channelsUpdated = 0;
+        let skipped = 0;
+        let failed = 0;
+
+        console.log(`MODE: ${MODE.toUpperCase()}`);
+
+        // 1. Match and update server-wide role permissions
+        console.log('\n--- SERVER ROLE PERMISSIONS ---');
 
         const sourceRoles = [...source.roles.cache.values()]
             .filter(r => r.id !== source.id);
 
+        const destRoles = [...dest.roles.cache.values()]
+            .filter(r => r.id !== dest.id);
+
         for (const role of sourceRoles) {
-            const matches = [...dest.roles.cache.values()]
-                .filter(r => r.name === role.name);
-
-            if (matches.length === 1) {
-                roleMap.set(role.id, matches[0].id);
-            } else {
-                console.log(
-                    `WARNING: Role unmatched or ambiguous: ${role.name}`
-                );
-            }
-        }
-
-        const sourceChannels = [...source.channels.cache.values()]
-            .filter(c =>
-                !c.isThread() &&
-                c.permissionOverwrites
-            )
-            .sort((a, b) => {
-                if (a.type === ChannelType.GuildCategory &&
-                    b.type !== ChannelType.GuildCategory) return -1;
-
-                if (b.type === ChannelType.GuildCategory &&
-                    a.type !== ChannelType.GuildCategory) return 1;
-
-                return a.rawPosition - b.rawPosition;
-            });
-
-        const destChannels = [...dest.channels.cache.values()]
-            .filter(c =>
-                !c.isThread() &&
-                c.permissionOverwrites
-            );
-
-        let copied = 0;
-        let skipped = 0;
-        let failed = 0;
-
-        console.log(`Mode: ${MODE.toUpperCase()}`);
-
-        for (const sourceChannel of sourceChannels) {
-            const key = channelKey(sourceChannel);
-
-            const matches = destChannels.filter(
-                c => channelKey(c) === key
+            const matches = destRoles.filter(r =>
+                r.name === role.name &&
+                !used.has(r.id)
             );
 
             if (matches.length !== 1) {
-                console.log(
-                    `SKIPPED: ${sourceChannel.name} (missing or ambiguous channel)`
-                );
+                console.log(`SKIP role: ${role.name} (ambiguous/missing)`);
                 skipped++;
                 continue;
             }
 
-            const destChannel = matches[0];
-            const overwrites = [];
-            let unsafe = false;
+            const match = matches[0];
+            used.add(match.id);
+            roleMap.set(role.id, match.id);
 
-            for (const overwrite of
-                sourceChannel.permissionOverwrites.cache.values()) {
+            if (role.managed || match.managed) {
+                console.log(`Managed role: ${role.name} (not editable)`);
+                continue;
+            }
 
-                let targetId;
+            if (!match.editable) {
+                console.log(`SKIP role: ${role.name} (above bot)`);
+                skipped++;
+                continue;
+            }
 
-                if (overwrite.type === OverwriteType.Role) {
-                    targetId = roleMap.get(overwrite.id);
-                } else {
-                    // Member-specific permissions cannot be
-                    // safely translated between servers.
-                    console.log(
-                        `WARNING: Member overwrite in ${sourceChannel.name}`
+            console.log(`${MODE}: Role ${role.name}`);
+
+            if (MODE === 'apply') {
+                try {
+                    await match.setPermissions(
+                        role.permissions,
+                        'Copy original server role permissions'
                     );
-                    unsafe = true;
+                    rolesUpdated++;
+                } catch (error) {
+                    failed++;
+                    console.error(`FAILED role ${role.name}: ${error.message}`);
+                }
+            }
+        }
+
+        // @everyone base permissions
+        console.log(`${MODE}: @everyone`);
+
+        if (MODE === 'apply') {
+            try {
+                await dest.roles.everyone.setPermissions(
+                    source.roles.everyone.permissions,
+                    'Copy original @everyone permissions'
+                );
+                rolesUpdated++;
+            } catch (error) {
+                failed++;
+                console.error(`FAILED @everyone: ${error.message}`);
+            }
+        }
+
+        // 2. Copy category and channel permission overwrites
+        console.log('\n--- CATEGORY & CHANNEL PERMISSIONS ---');
+
+        const sourceChannels = [...source.channels.cache.values()]
+            .filter(c => !c.isThread() && c.permissionOverwrites)
+            .sort((a, b) => {
+                if (a.type === ChannelType.GuildCategory &&
+                    b.type !== ChannelType.GuildCategory) return -1;
+                if (b.type === ChannelType.GuildCategory &&
+                    a.type !== ChannelType.GuildCategory) return 1;
+                return a.rawPosition - b.rawPosition;
+            });
+
+        const destChannels = [...dest.channels.cache.values()]
+            .filter(c => !c.isThread() && c.permissionOverwrites);
+
+        const channelMap = new Map();
+
+        for (const src of sourceChannels) {
+            const matches = destChannels.filter(d => key(d) === key(src));
+
+            if (matches.length === 1) {
+                channelMap.set(src.id, matches[0]);
+            } else {
+                console.log(`SKIP channel: ${src.name} (missing/ambiguous)`);
+                skipped++;
+            }
+        }
+
+        for (const src of sourceChannels) {
+            const dst = channelMap.get(src.id);
+            if (!dst) continue;
+
+            const overwrites = [];
+            let safe = true;
+
+            for (const overwrite of src.permissionOverwrites.cache.values()) {
+                if (overwrite.type !== OverwriteType.Role) {
+                    console.log(
+                        `SKIP ${src.name}: member-specific override`
+                    );
+                    safe = false;
                     break;
                 }
 
-                if (!targetId) {
+                const mapped = roleMap.get(overwrite.id);
+
+                if (!mapped) {
                     console.log(
-                        `WARNING: Missing role for overwrite in ${sourceChannel.name}`
+                        `SKIP ${src.name}: unmapped role ${overwrite.id}`
                     );
-                    unsafe = true;
+                    safe = false;
                     break;
                 }
 
                 overwrites.push({
-                    id: targetId,
+                    id: mapped,
                     type: OverwriteType.Role,
                     allow: overwrite.allow.bitfield,
                     deny: overwrite.deny.bitfield
                 });
             }
 
-            if (unsafe) {
-                console.log(
-                    `SKIPPED: ${sourceChannel.name} (unmapped permissions)`
-                );
+            if (!safe) {
                 skipped++;
                 continue;
             }
 
             console.log(
-                `${MODE === 'apply' ? 'COPYING' : 'PREVIEW'}: ` +
-                `${sourceChannel.name} (${overwrites.length} overwrites)`
+                `${MODE}: ${src.name} (${overwrites.length} overrides)`
             );
 
-            if (MODE === 'preview') {
-                continue;
-            }
+            if (MODE !== 'apply') continue;
 
             try {
-                await destChannel.permissionOverwrites.set(
-                    overwrites,
-                    'Copy permissions from original server'
-                );
+                // Preserve synchronization with category if possible
+                const parent = src.parentId
+                    ? channelMap.get(src.parentId)
+                    : null;
 
-                copied++;
-                console.log(`SUCCESS: ${sourceChannel.name}`);
+                if (parent && dst.parentId !== parent.id) {
+                    await dst.setParent(parent.id, { lockPermissions: false });
+                }
+
+                if (
+                    src.parentId &&
+                    src.permissionsLocked &&
+                    parent
+                ) {
+                    await dst.lockPermissions();
+                } else {
+                    await dst.permissionOverwrites.set(
+                        overwrites,
+                        'Copy original channel permissions'
+                    );
+                }
+
+                channelsUpdated++;
+                console.log(`SUCCESS: ${src.name}`);
 
             } catch (error) {
                 failed++;
-                console.error(
-                    `FAILED: ${sourceChannel.name}: ${error.message}`
-                );
+                console.error(`FAILED ${src.name}: ${error.message}`);
             }
         }
 
-        console.log('\n-----------------------------');
-        console.log('Permission migration finished');
-        console.log(`Applied: ${copied}`);
+        console.log('\n================================');
+        console.log('PERMISSIONS COPY FINISHED');
+        console.log(`Roles updated: ${rolesUpdated}`);
+        console.log(`Categories/channels updated: ${channelsUpdated}`);
         console.log(`Skipped: ${skipped}`);
         console.log(`Failed: ${failed}`);
 
         if (MODE === 'preview') {
-            console.log(
-                'Preview only. No permissions were changed.'
-            );
+            console.log('Preview only. No changes were made.');
         }
 
     } catch (error) {
