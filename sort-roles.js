@@ -44,8 +44,15 @@ async function sortRoles() {
             .sort((a, b) => a.position - b.position);
 
         // Destination roles the bot can actually move
-        const destRoles = [...destination.roles.cache.values()]
-            .filter(role => role.editable && !role.managed);
+       const botHighest = botMember.roles.highest.position;
+
+const destRoles = [...destination.roles.cache.values()]
+    .filter(role =>
+        role.id !== destination.id &&
+        !role.managed &&
+        role.editable &&
+        role.position < botHighest
+    );
 
         const usedIds = new Set();
         const matches = [];
