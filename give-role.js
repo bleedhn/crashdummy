@@ -2,7 +2,15 @@
 import { REST, Routes } from 'discord.js';
 import 'dotenv/config';
 
-const TOKEN = process.env.TOKEN;
+const TOKEN =
+    process.env.TOKEN ||
+    process.env.DISCORD_TOKEN ||
+    process.env.BOT_TOKEN;
+
+if (!TOKEN) {
+    console.error('Discord bot token was not found.');
+    process.exit(1);
+}
 
 const SERVER_ID = '1071823690611834900';
 const USER_ID = '1559435216039313421';
