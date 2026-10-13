@@ -5,10 +5,12 @@ import 'dotenv/config';
 const TOKEN =
     process.env.TOKEN ||
     process.env.DISCORD_TOKEN ||
-    process.env.BOT_TOKEN;
+    process.env.BOT_TOKEN ||
+    process.env.DISCORD_BOT_TOKEN;
 
 if (!TOKEN) {
-    console.error('Discord bot token was not found.');
+    console.error('ERROR: Discord bot token is missing!');
+    console.error('Check your Railway service variables.');
     process.exit(1);
 }
 
