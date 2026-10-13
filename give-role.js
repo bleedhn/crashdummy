@@ -1,23 +1,30 @@
+
 import { REST, Routes } from 'discord.js';
+import 'dotenv/config';
 
-const [guildId, userId, roleId] = process.argv.slice(2);
-const token = process.env.TOKEN;
+const TOKEN = process.env.TOKEN;
 
-if (!token || !guildId || !userId || !roleId) {
-    console.error('Usage: node give-role.js GUILD_ID USER_ID ROLE_ID');
-    process.exit(1);
+const SERVER_ID = '1071823690611834900';
+const USER_ID = '1559435216039313421';
+const ROLE_ID = '1556785571639070771';
+
+const rest = new REST({ version: '10' }).setToken(TOKEN);
+
+async function giveRole() {
+    try {
+        await rest.put(
+            Routes.guildMemberRole(
+                SERVER_ID,
+                USER_ID,
+                ROLE_ID
+            ),
+            { body: {} }
+        );
+
+        console.log('Successfully gave the user the role!');
+    } catch (error) {
+        console.error('Failed to give role:', error);
+    }
 }
 
-const rest = new REST({ version: '10' }).setToken(token);
-
-try {
-    await rest.put(
-        Routes.guildMemberRole(guildId, userId, roleId),
-        { body: {} }
-    );
-
-    console.log('Successfully assigned the Discord role!');
-} catch (error) {
-    console.error('Failed to assign role:', error.message);
-    process.exitCode = 1;
-}
+giveRole();
