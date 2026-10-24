@@ -13,6 +13,7 @@
 - [Manual Installation Steps](#manual-installation-steps)
 - [Support Server](https://discord.gg/QnWNz2dKCE)
 - [Required Bot Intents](#bot-intents)
+- [Roblox admin logs](#roblox-admin-logs)
 - [Contributing](CONTRIBUTING.md)
 
 <a name="features-overview"></a>
@@ -246,6 +247,59 @@ Notes:
 > migration step — just deploy/restart. To disable auto-migration set
 > `AUTO_MIGRATE=false`. You can still run a manual key migration locally with
 > `node scripts/migrate-keys.js --dry-run` (preview) or `node scripts/migrate-keys.js`.
+<a name="roblox-admin-logs"></a>
+## Roblox admin logs
+
+Crashdummy posts every admin log from **every running server** of the Roblox car game into one Discord
+channel: staff warnings, kicks, bans and unbans (successful, failed or denied), anti-cheat warnings and
+"suspicious" reports, every admin / tester command (coins, studs, multiplier, fly, car, crates ...),
+spectate, TP to player, admin panel access and refused requests.
+
+```
+Roblox server (any JobId) --HTTPS + secret--> POST /api/roblox/admin-logs (this bot, Railway)
+                                                 -> PostgreSQL outbox -> embed in ROBLOX_LOG_CHANNEL_ID
+```
+
+**Code:** `src/services/robloxAdminLogs/` (config, schema, auth, handler, router, store, formatter,
+delivery). `src/app.js` only mounts the route on the existing web server and starts / stops delivery.
+In the game: `ServerScriptService.AdminAudit.DiscordAuditLogger` + `DiscordLogConfig`.
+
+### Railway variables
+
+| Variable | Value |
+| --- | --- |
+| `ROBLOX_LOG_CHANNEL_ID` | `1563413821954068480` |
+| `ROBLOX_LOG_SHARED_SECRET` | a new random secret, 64+ characters (never the bot token) |
+| `ROBLOX_LOG_ALLOWED_UNIVERSE_IDS` | `10769457423` (optional: refuse other games) |
+
+The bot keeps using its existing `DISCORD_TOKEN`, `PORT` and PostgreSQL variables. Without
+`ROBLOX_LOG_SHARED_SECRET` the endpoint answers 503 and nothing else changes.
+
+### Security
+- Bearer secret checked (constant time) before the body is read; repeated failures are rate limited.
+- Strict schema (unknown fields refused), 64 KB body limit, at most 25 events per request.
+- `sentAt` must be within 5 minutes of the bot's clock (replays refused); events older than 6 h refused.
+- Each event id is stored once (primary key), so retries and replays never post twice.
+- Rate limits per Roblox server and in total (moderation is never held back).
+- The channel comes only from `ROBLOX_LOG_CHANNEL_ID`; requests cannot choose a channel.
+- Game text is markdown-escaped, every `@` is broken with a zero-width space, and messages are sent
+  with mentions disabled: no `@everyone`, `@here`, user or role pings.
+
+### Delivery guarantee
+Events are written to the PostgreSQL table `roblox_admin_log_events` before Roblox gets its 202, and
+stay there until Discord confirms the message, so they survive restarts and redeploys. Discord or
+network errors are retried with exponential backoff (up to 20 tries); a missing channel permission is
+waited out indefinitely. This is **at-least-once**: if the bot stops in the moment after Discord
+accepted a message but before it was marked sent, that one message can appear twice. Without
+PostgreSQL the outbox is in memory and anything waiting is lost on restart (a warning says so).
+On the Roblox side, events wait in a bounded queue (300) and are retried for a few minutes; the game's
+own audit log (DataStore) is always written first and does not depend on Discord.
+
+### Tests
+```
+npm run test:roblox-logs
+```
+
 <a name="bot-intents"></a>
 
 ## Required Bot Intents
