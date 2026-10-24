@@ -1,4 +1,4 @@
-﻿import 'dotenv/config';
+import 'dotenv/config';
 import { Client, Collection, GatewayIntentBits } from 'discord.js';
 import { REST } from '@discordjs/rest';
 import express from 'express';
@@ -17,6 +17,7 @@ import { initializeMusic } from './services/music/riffySetup.js';
 import { shutdownMusic } from './services/music/playerHandler.js';
 import pkg from '../package.json' with { type: 'json' };
 import { EXPECTED_SCHEMA_VERSION, EXPECTED_SCHEMA_LABEL } from './config/database/schemaVersion.js';
+import { mountRobloxAdminLogs, startRobloxAdminLogDelivery, stopRobloxAdminLogDelivery } from './services/robloxAdminLogs/index.js';
 
 class TitanBot extends Client {
   constructor() {
@@ -89,6 +90,9 @@ class TitanBot extends Client {
       startupLog('Logging into Discord...');
       await this.login(this.config.bot.token);
       startupLog('Discord login successful');
+
+      // Roblox admin logs -> Discord (POST /api/roblox/admin-logs): start posting the stored logs
+      startRobloxAdminLogDelivery(this);
       
       startupLog('Registering slash commands globally...');
       await this.registerCommands();
@@ -111,6 +115,9 @@ class TitanBot extends Client {
 
   startWebServer() {
     const app = express();
+    // Roblox admin logs (POST /api/roblox/admin-logs): mounted first, so it has its own auth and rate
+    // limits instead of the CORS / per-IP limiter below (behind Railway's proxy every caller has the same req.ip)
+    mountRobloxAdminLogs(app, this);
     const configuredPort = Number(this.config.api?.port || process.env.PORT || 3000);
     const maxPortRetryAttempts = Number(process.env.PORT_RETRY_ATTEMPTS || 5);
     const host = process.env.WEB_HOST || '0.0.0.0';
@@ -341,6 +348,8 @@ class TitanBot extends Client {
       logger.info('Stopping cron jobs...');
       cron.getTasks().forEach(task => task.stop());
       logger.info('✅ Cron jobs stopped');
+
+      stopRobloxAdminLogDelivery();
 
       logger.info('Stopping music players...');
       await shutdownMusic(this);
