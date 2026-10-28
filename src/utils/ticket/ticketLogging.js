@@ -131,6 +131,9 @@ async function createTicketLogEmbed(guild, event) {
       if (channelMention) {
         inlineFields.push({ name: 'Channel', value: channelMention, inline: true });
       }
+      if (event.metadata?.game) {
+        fields.push({ name: 'Game', value: String(event.metadata.game).slice(0, 1024), inline: false });
+      }
       if (event.reason) {
         fields.push({ name: 'Reason', value: String(event.reason).slice(0, 1024), inline: false });
       }
@@ -277,4 +280,3 @@ export function validateLogChannel(channel, botMember) {
 
   return { valid: true };
 }
-
