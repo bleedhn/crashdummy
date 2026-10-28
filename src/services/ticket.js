@@ -79,10 +79,12 @@ export const getUserTicketCount = wrapServiceBoundary(async function getUserTick
   context: {},
 });
 
-export async function createTicket(guild, member, categoryId, reason = 'No reason provided', priority = 'none', typeEmoji = '') {
+// options.game: the game a Game Support ticket is about (shown on the ticket, in the ticket log and on the transcript)
+export async function createTicket(guild, member, categoryId, reason = 'No reason provided', priority = 'none', typeEmoji = '', options = {}) {
   try {
     const config = await getGuildConfig(guild.client, guild.id);
     const ticketConfig = config.tickets || {};
+    const game = typeof options?.game === 'string' && options.game.trim() ? options.game.trim().slice(0, 100) : null;
     
     const maxTicketsPerUser = config.maxTicketsPerUser ?? 3;
     const currentTicketCount = await getUserTicketCount(guild.id, member.id);
@@ -166,6 +168,7 @@ export async function createTicket(guild, member, categoryId, reason = 'No reaso
       claimedBy: null,
       priority: priority || 'none',
       reason,
+      ...(game ? { game } : {}),
     };
     
     await saveTicketData(guild.id, channel.id, ticketData);
@@ -174,7 +177,7 @@ export async function createTicket(guild, member, categoryId, reason = 'No reaso
     
     const embed = createEmbed({
       title: `Ticket - ${member.user.username}`,
-      description: `${member.toString()}, Thank you for creating a ticket! Please be patient, a staff member will be with you shortly.\n\n**Reason:** ${reason}\n**Priority:** ${priorityInfo.emoji} ${priorityInfo.label}`,
+      description: `${member.toString()}, Thank you for creating a ticket! Please be patient, a staff member will be with you shortly.\n\n${game ? `**Game:** ${game}\n` : ''}**Reason:** ${reason}\n**Priority:** ${priorityInfo.emoji} ${priorityInfo.label}`,
       color: priorityInfo.color,
       fields: [
         { name: 'Status', value: '🟢 Open', inline: true },
@@ -224,7 +227,8 @@ export async function createTicket(guild, member, categoryId, reason = 'No reaso
         priority: priority || 'none',
         metadata: {
           channelId: channel.id,
-          categoryName: category?.name || 'Default'
+          categoryName: category?.name || 'Default',
+          ...(game ? { game } : {}),
         }
       }
     });
@@ -791,6 +795,7 @@ export async function deleteTicket(channel, deleter) {
                   description: [
                     formatLogLine('Ticket', `#${ticketData.id}`),
                     formatLogLine('Channel', `#${channel.name}`),
+                    ...(ticketData.game ? [formatLogLine('Game', ticketData.game)] : []),
                     formatLogLine('Generated', `<t:${Math.floor(Date.now() / 1000)}:F>`),
                   ].join('\n'),
                   footer: deleter?.username
