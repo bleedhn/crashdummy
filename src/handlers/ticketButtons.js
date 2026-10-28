@@ -102,6 +102,25 @@ async function ensureTicketPermission(interaction, client, actionLabel, options 
   return context;
 }
 
+const GAME_FIELD_ID = 'game';
+const GAME_MAX_LENGTH = 100;
+
+// `create_ticket:discord` / `create_ticket_modal:discord` = Discord Support; anything else is Game Support.
+function isDiscordTicket(args) {
+  return args?.[0] === 'discord';
+}
+
+// The game the user typed on a Game Support ticket, or null (e.g. a form that was opened before this field existed).
+function readGameField(interaction) {
+  try {
+    const value = interaction.fields.getTextInputValue(GAME_FIELD_ID);
+    const game = typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
+    return game ? game.slice(0, GAME_MAX_LENGTH) : null;
+  } catch {
+    return null;
+  }
+}
+
 const createTicketHandler = {
   name: 'create_ticket',
   async execute(interaction, client, args) {
@@ -128,6 +147,20 @@ const createTicketHandler = {
       const modal = new ModalBuilder()
         .setCustomId(args?.[0] ? `create_ticket_modal:${args[0]}` : 'create_ticket_modal')
         .setTitle('Create a Ticket');
+
+      // Game Support (the panel's 🎮 button, customId `create_ticket` with no type) also asks which game the
+      // ticket is about. Discord Support (`create_ticket:discord`) does not.
+      if (!isDiscordTicket(args)) {
+        const gameInput = new TextInputBuilder()
+          .setCustomId(GAME_FIELD_ID)
+          .setLabel('Which game is this ticket for?')
+          .setStyle(TextInputStyle.Short)
+          .setPlaceholder('e.g. Dungeon Racers')
+          .setRequired(true)
+          .setMinLength(2)
+          .setMaxLength(GAME_MAX_LENGTH);
+        modal.addComponents(new ActionRowBuilder().addComponents(gameInput));
+      }
 
       const reasonInput = new TextInputBuilder()
         .setCustomId('reason')
@@ -159,7 +192,8 @@ const createTicketModalHandler = {
       if (!deferSuccess) return;
 
       const reason = interaction.fields.getTextInputValue('reason');
-      const typeEmoji = args?.[0] === 'discord' ? '👾' : '🎮';
+      const typeEmoji = isDiscordTicket(args) ? '👾' : '🎮';
+      const game = isDiscordTicket(args) ? null : readGameField(interaction);
       const config = await getGuildConfig(client, interaction.guildId);
       const categoryId = config.ticketCategoryId || null;
 
@@ -169,7 +203,8 @@ const createTicketModalHandler = {
         categoryId,
         reason,
         'none',
-        typeEmoji
+        typeEmoji,
+        { game }
       );
       await interaction.editReply({
         embeds: [successEmbed(
